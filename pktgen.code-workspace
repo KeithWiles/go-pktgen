@@ -1,0 +1,61 @@
+{
+	"folders": [
+		{
+			"name": "pktgen",
+			"path": "pktgen"
+		},
+		{
+			"name": "asciichart",
+			"path": "pkgs/asciichart"
+		},
+		{
+			"name": "colorize",
+			"path": "pkgs/colorize"
+		},
+		{
+            "name": "cpudata",
+			"path": "pkgs/cpudata"
+		}
+		{
+			"name": "etimers",
+			"path": "pkgs/etimers"
+		},
+		{
+			"name": "graphdata",
+			"path": "pkgs/graphdata"
+		},
+		{
+			"name": "hexdump",
+			"path": "pkgs/hexdump"
+		},
+		{
+			"name": "taborder",
+			"path": "pkgs/taborder"
+		},
+		{
+			"name": "ttylog",
+			"path": "pkgs/ttylog"
+		},
+		{
+			"name": "utils",
+			"path": "pkgs/utils"
+		},
+	],
+	"settings": {
+		"cSpell.words": [
+			"cpudata",
+			"cpuload",
+			"Hugepage",
+			"ifaces",
+			"lcore",
+			"pkgs",
+			"pktgen",
+			"sysinfo",
+			"taborder",
+			"tcell",
+			"tlog",
+			"ttylog",
+			"tview"
+		]
+	}
+}
