@@ -37,9 +37,9 @@ type PanelInfo struct {
 // presentation to the next slide.
 type Panels func(nextPanel func()) (title string, content tview.Primitive)
 
-// Pktgen for monitoring DPDK and system performance data
+// Pktgen for monitoring and system performance data
 type Pktgen struct {
-	version string             // Version of PMDT
+	version string             // Version of Pktgen
 	app     *tview.Application // Application or top level application
 	timers  *etimers.EventTimers
 	cpuData *cpudata.CPUData
@@ -137,9 +137,8 @@ func main() {
 	pktgen.timers.Start()
 
 	panels := []Panels{
-		SingleModePanelSetup,
 		SysInfoPanelSetup,
-		DevBindPanelSetup,
+		SingleModePanelSetup,
 		CPULoadPanelSetup,
 	}
 

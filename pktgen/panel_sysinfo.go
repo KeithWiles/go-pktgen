@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"strings"
+	"sort"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -16,9 +18,33 @@ import (
 	"github.com/shirou/gopsutil/net"
 
 	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	"github.com/KeithWiles/go-pktgen/pkgs/devbind"
 	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
 	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
+
+// Display system device configuration
+
+// tableData for each view
+type tableData struct {
+	name       string
+	classes    []*devbind.DeviceConfig
+	align      int
+	fixedSize  int
+	proportion int
+	focus      bool
+	key        rune
+}
+
+// tableInfo for each Table window
+type tableInfo struct {
+	changed bool
+	length  int
+	name    string
+	view    *tview.Table
+	classes []*devbind.DeviceConfig
+	devlist []*devbind.DeviceClass
+}
 
 // PageSysInfo - Data for main page information
 type PageSysInfo struct {
@@ -26,6 +52,9 @@ type PageSysInfo struct {
 	host    *tview.TextView
 	mem     *tview.TextView
 	hostNet *tview.Table
+	devbind *devbind.BindInfo
+	tables  []tableData
+	tInfos  map[string]*tableInfo
 }
 
 const (
@@ -37,22 +66,70 @@ func init() {
 }
 
 // Printf - send message to the ttylog interface
-func (pg *PageSysInfo) Printf(format string, a ...interface{}) {
-	tlog.Log("SysInfoLogID", fmt.Sprintf("%T.", pg)+format, a...)
+func (ps *PageSysInfo) Printf(format string, a ...interface{}) {
+	tlog.Log("SysInfoLogID", fmt.Sprintf("%T.", ps)+format, a...)
 }
 
 // setupSysInfo - setup and init the sysInfo page
 func setupSysInfo() *PageSysInfo {
 
-	pg := &PageSysInfo{}
+	ps := &PageSysInfo{}
 
-	return pg
+	ps.devbind = devbind.New()
+
+	db := ps.devbind
+
+	ps.tInfos = make(map[string]*tableInfo)
+
+	// Create the set of tables to display each section in a different window
+	ps.tables = []tableData{
+		{
+			name:       "Network",
+			classes:    db.Groups[devbind.NetworkGroup],
+			align:      tview.AlignLeft,
+			fixedSize:  0,
+			proportion: 1,
+			focus:      true,
+			key:        'N',
+		}, {
+			name:       "Crypto",
+			classes:    db.Groups[devbind.CryptoGroup],
+			align:      tview.AlignLeft,
+			fixedSize:  0,
+			proportion: 1,
+			focus:      true,
+			key:        'c',
+		}, {
+			name:       "Compression",
+			classes:    db.Groups[devbind.CompressGroup],
+			align:      tview.AlignLeft,
+			fixedSize:  0,
+			proportion: 1,
+			focus:      true,
+			key:        'C',
+		}, {
+			name:       "DMA",
+			classes:    db.Groups[devbind.DMAGroup],
+			align:      tview.AlignLeft,
+			fixedSize:  0,
+			proportion: 1,
+			focus:      true,
+			key:        'd',
+		},
+	}
+
+	// Add the table above into the tableInfo slice.
+	for _, td := range ps.tables {
+		ps.tInfos[td.name] = &tableInfo{classes: td.classes, name: td.name}
+	}
+
+	return ps
 }
 
 // SysInfoPanelSetup setup the main cpu page
 func SysInfoPanelSetup(nextSlide func()) (pageName string, content tview.Primitive) {
 
-	pg := setupSysInfo()
+	ps := setupSysInfo()
 
 	to := tab.New(sysinfoPanelName, pktgen.app)
 
@@ -62,56 +139,74 @@ func SysInfoPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 
 	TitleBox(flex0)
 
-	pg.host = CreateTextView(flex2, "Host (h)", tview.AlignLeft, 0, 1, true)
-	pg.mem = CreateTextView(flex2, "Memory (m)", tview.AlignLeft, 0, 1, false)
-	flex1.AddItem(flex2, 10, 1, true)
+	ps.host = CreateTextView(flex2, "Host (h)", tview.AlignLeft, 0, 1, true)
+	ps.mem = CreateTextView(flex2, "Memory (m)", tview.AlignLeft, 0, 1, false)
+	flex1.AddItem(flex2, 0, 1, true)
 
-	pg.hostNet = CreateTableView(flex1, "Host Network Stats (n)", tview.AlignLeft, 0, 1, false).
+	ps.hostNet = CreateTableView(flex1, "Host Network Stats (n)", tview.AlignLeft, 0, 1, false).
 		SetSelectable(false, false).
 		SetFixed(1, 1).
 		SetSeparator(tview.Borders.Vertical)
-	flex0.AddItem(flex1, 0, 3, true)
 
-	to.Add("host", pg.host, 'h')
-	to.Add("memory", pg.mem, 'm')
-	to.Add("hostName", pg.hostNet, 'n')
+	to.Add("host", ps.host, 'h')
+	to.Add("memory", ps.mem, 'm')
+	to.Add("hostName", ps.hostNet, 'n')
+
+	ti := ps.tInfos
+
+	// Create each table view for each of the device table entries
+	for _, td := range ps.tables {
+		s := fmt.Sprintf("%s Devices (%c)", td.name, td.key)
+
+		ti[td.name].view = CreateTableView(flex1, s, td.align, td.fixedSize, td.proportion, td.focus).
+			SetFixed(1, 0).
+			SetSeparator(tview.Borders.Vertical)
+
+		// Add the single key and define the tab order.
+		to.Add(fmt.Sprintf("Table-%v", td.key), ti[td.name].view, td.key)
+	}
+	flex0.AddItem(flex1, 0, 3, true)
 
 	to.SetInputDone()
 
-	pg.topFlex = flex0
+	ps.topFlex = flex0
 
 	// Setup static pages
-	pg.displayHost(pg.host)
-	pg.displayHostNet(pg.hostNet)
-	pg.hostNet.ScrollToBeginning()
+	ps.displayHost(ps.host)
+	ps.displayHostNet(ps.hostNet)
+	ps.hostNet.ScrollToBeginning()
 
 	pktgen.timers.Add(sysinfoPanelName, func(step int, ticks uint64) {
-		if pg.topFlex.HasFocus() {
+		if ps.topFlex.HasFocus() {
 			pktgen.app.QueueUpdateDraw(func() {
-				pg.displaySysInfo(step, ticks)
+				ps.displaySysInfo(step, ticks)
 			})
 		}
 	})
 
-	return sysinfoPanelName, pg.topFlex
+	return sysinfoPanelName, ps.topFlex
 }
 
 // Callback timer routine to display the sysinfo panel
-func (pg *PageSysInfo) displaySysInfo(step int, ticks uint64) {
+func (ps *PageSysInfo) displaySysInfo(step int, ticks uint64) {
 
 	switch step {
 	case 0:
-		pg.displayMem(pg.mem)
+		ps.displayMem(ps.mem)
+		for _, t := range ps.tInfos {
+			ps.collectData(t)
+		}
 
 	case 1:
 
 	case 2:
-		pg.displayHostNet(pg.hostNet)
+		ps.displayHostNet(ps.hostNet)
+		ps.displayPageSysInfo(step)
 	}
 }
 
 // Display the Host information
-func (pg *PageSysInfo) displayHost(view *tview.TextView) {
+func (ps *PageSysInfo) displayHost(view *tview.TextView) {
 
 	str := ""
 	info, _ := host.Info()
@@ -146,7 +241,7 @@ func (pg *PageSysInfo) displayHost(view *tview.TextView) {
 }
 
 // Display the information about the memory in the system
-func (pg *PageSysInfo) displayMem(view *tview.TextView) {
+func (ps *PageSysInfo) displayMem(view *tview.TextView) {
 
 	str := ""
 
@@ -160,13 +255,13 @@ func (pg *PageSysInfo) displayMem(view *tview.TextView) {
 	str += fmt.Sprintf("%s:\n", cz.MediumSpringGreen("Total Hugepage Info"))
 	str += fmt.Sprintf("   Free/Total: %s/%s pages\n", cz.LightBlue(p.Sprintf("%d", v.HugePagesFree), 6),
 		cz.LightBlue(p.Sprintf("%d", v.HugePagesTotal), 6))
-	str += fmt.Sprintf("Hugepage Size: %s Kb\n", cz.LightBlue(p.Sprintf("%d", v.HugePageSize/KiloBytes), 6))
+	str += fmt.Sprintf("Hugepage Size: %s Kb", cz.LightBlue(p.Sprintf("%d", v.HugePageSize/KiloBytes), 6))
 
 	view.SetText(str)
 }
 
 // Display the Host network information
-func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
+func (ps *PageSysInfo) displayHostNet(view *tview.Table) {
 
 	row := 0
 	col := 0
@@ -189,7 +284,7 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 		cz.Yellow("Tx Drop"),
 		cz.Yellow("Flags"),
 		cz.Yellow("MAC"),
-		cz.Yellow(" ", 10),
+		cz.Yellow(" ", 4),
 	}
 	row = TableSetHeaders(view, 0, 0, titles)
 
@@ -201,7 +296,7 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 		tableCell := tview.NewTableCell(value).
 			SetAlign(align).
 			SetSelectable(false)
-		pg.hostNet.SetCell(row, col, tableCell)
+		ps.hostNet.SetCell(row, col, tableCell)
 		col++
 
 		return col
@@ -209,7 +304,7 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 
 	ioCount, err := net.IOCounters(true)
 	if err != nil {
-		pg.Printf("network IO Count: %s\n", err)
+		ps.Printf("network IO Count: %s\n", err)
 		return
 	}
 
@@ -241,7 +336,7 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 				cz.Red(p.Sprintf("%d", k.Dropout)),
 			}
 			for _, v := range rowData {
-				col = TableCellSet(pg.hostNet, row, col, v)
+				col = TableCellSet(ps.hostNet, row, col, v)
 			}
 			break
 		}
@@ -254,4 +349,111 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 	for ; row < view.GetRowCount(); row++ {
 		view.RemoveRow(row)
 	}
+}
+
+// Display the given devbind data panel for each window
+func (ps *PageSysInfo) displayPageSysInfo(step int) {
+	for _, ti := range ps.tInfos {
+		if ti.changed {
+			ti.changed = false
+			ps.displayView(ti)
+		}
+	}
+}
+
+// Collect the data to be displayed in the different device windows
+func (ps *PageSysInfo) collectData(ti *tableInfo) {
+
+	deviceList := make([]*devbind.DeviceClass, 0)
+
+	tlog.DebugPrintf("Name: %s, Classes: %+v\n", ti.name, ti.classes)
+
+	// Convert the map into a slice to be able to sort it
+	for _, l := range ps.devbind.FindDevicesByDeviceClass(ti.name, ti.classes) {
+		deviceList = append(deviceList, l)
+	}
+	tlog.DebugPrintf("Name: %s, deviceList: %+v\n", ti.name, deviceList)
+
+	sort.Slice(deviceList, func(i, j int) bool {
+		return deviceList[j].Slot > deviceList[i].Slot
+	})
+
+	// Set the device list and set the changed flag to force update of window
+	ti.devlist = deviceList
+	if ti.length != len(deviceList) {
+		ti.changed = true
+		ti.length = len(deviceList)
+	}
+}
+
+// Display the formation into the given table, all windows use this routine
+func (ps *PageSysInfo) displayView(ti *tableInfo) {
+
+	view := ti.view
+
+	titles := []string{
+		cz.CornSilk("Slot"),
+		cz.CornSilk("Vendor ID"),
+		cz.CornSilk("Vendor Name"),
+		cz.CornSilk("Device Description"),
+		cz.CornSilk("Interface"),
+		cz.CornSilk("Driver"),
+		cz.CornSilk("Active"),
+		cz.CornSilk("NUMA"),
+	}
+	row := TableSetHeaders(view, 0, 0, titles)
+
+	for _, d := range ti.devlist {
+		col := 0
+
+		SetCell(view, row, col, cz.DeepPink(d.Slot), tview.AlignLeft)
+		col++
+
+		s := fmt.Sprintf("%s:%s", cz.SkyBlue(d.Vendor.ID), cz.SkyBlue(d.Device.ID))
+		SetCell(view, row, col, s, tview.AlignLeft)
+		col++
+
+		str := d.Vendor.Str
+		idx := strings.Index(str, "[")
+		if idx != -1 {
+			str = str[:idx-1]
+		}
+		SetCell(view, row, col, cz.SkyBlue(str), tview.AlignLeft)
+		col++
+
+		str = d.SDevice.Str
+		idx = strings.Index(str, "[")
+		if idx != -1 {
+			str = str[:idx-1]
+		}
+		SetCell(view, row, col, cz.LightGreen(str), tview.AlignLeft)
+		col++
+
+		str = d.Interface
+		SetCell(view, row, col, cz.ColorWithName("Tomato", str), tview.AlignLeft)
+		col++
+
+		str = d.Driver
+		SetCell(view, row, col, cz.LightYellow(str), tview.AlignLeft)
+		col++
+
+		str = ""
+		if d.Active {
+			str = cz.Orange("*Active*")
+		}
+		SetCell(view, row, col, str, tview.AlignLeft)
+		col++
+
+		str = d.NumaNode
+		idx = strings.Index(str, "[")
+		if idx != -1 {
+			str = str[:idx-1]
+		}
+		SetCell(view, row, col, cz.MistyRose(str), tview.AlignLeft)
+		col++
+
+		row++
+	}
+
+	ti.view.ScrollToBeginning()
 }

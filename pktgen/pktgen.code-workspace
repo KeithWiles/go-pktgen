@@ -1,0 +1,68 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../pkgs/asciichart"
+		},
+		{
+			"path": "../pkgs/colorize"
+		},
+		{
+			"path": "../pkgs/cpudata"
+		},
+		{
+			"path": "../pkgs/devbind"
+		},
+		{
+			"path": "../pkgs/etimers"
+		},
+		{
+			"path": "../pkgs/graphdata"
+		},
+		{
+			"path": "../pkgs/hexdump"
+		},
+		{
+			"path": "../pkgs/taborder"
+		},
+		{
+			"path": "../pkgs/ttylog"
+		},
+		{
+			"path": "../pkgs/utils"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"cpudata",
+			"devbind",
+			"devlist",
+			"Dropin",
+			"Errin",
+			"Errout",
+			"etimers",
+			"gdamore",
+			"gopsutil",
+			"Hugepage",
+			"ifaces",
+			"jessevdk",
+			"lcore",
+			"NUMA",
+			"pkgs",
+			"pktgen",
+			"Pkts",
+			"Ptty",
+			"rivo",
+			"shirou",
+			"sysinfo",
+			"taborder",
+			"tcell",
+			"tlog",
+			"ttylog",
+			"tview",
+			"vsys"
+		]
+	}
+}

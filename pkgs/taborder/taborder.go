@@ -81,7 +81,6 @@ func (to *Tab) SetHighlightBorderColor(color tcell.Color) {
 // setFocus to the tview primitive
 func (to *Tab) setFocus(a interface{}) {
 
-	tlog.DoPrintf("SetFocus: %T\n", a)
 	switch t := a.(type) {
 	case *tview.TextView:
 		to.Appl.SetFocus(t)
