@@ -45,6 +45,7 @@ type Pktgen struct {
 	cpuData *cpudata.CPUData
 	panels  []PanelInfo
 	portCnt int
+	single  []SinglePacketConfig
 }
 
 // Options command line options
@@ -99,6 +100,8 @@ func init() {
 	}
 	pktgen.cpuData = cd
 	pktgen.portCnt = 8
+
+	pktgen.single = make([]SinglePacketConfig, 8)
 }
 
 // Version number string

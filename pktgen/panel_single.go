@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"net"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -34,6 +35,25 @@ const (
 
 func init() {
 	tlog.Register("SingleModeLogID")
+
+	for i := 0; i < pktgen.portCnt; i++ {
+		pktgen.single[i] = SinglePacketConfig{
+			TxCount:     0,
+			PercentRate: 100.0,
+			PktSize:     64,
+			BurstCount:  128,
+			TimeToLive:  64,
+			SrcPort:     1245,
+			DstPort:     5678,
+			IPType:      "IPv4",
+			ProtoType:   "UDP",
+			VlanId:      1,
+			DstIP:       net.IPNet{IP: net.IPv4(198, 18, 1, 1), Mask: net.CIDRMask(0, 32)},
+			SrcIP:       net.IPNet{IP: net.IPv4(198, 18, 0, 1), Mask: net.CIDRMask(24, 32)},
+			DstMAC:      []byte{0x12, 0x34, 0x45, 0x67, 0x89, 00},
+			SrcMAC:      []byte{0x12, 0x34, 0x45, 0x67, 0x89, 01},
+		}
+	}
 }
 
 // Printf - send message to the ttylog interface
@@ -117,10 +137,12 @@ func (ps *PageSingleMode) configTable(table *tview.Table) {
 	row := 0
 	col := 0
 
+	single := pktgen.single
+
 	titles := []string{
 		cz.Yellow("Port", 4),
 		cz.Yellow("TX Count", 10),
-		cz.Yellow("Rate", 5),
+		cz.Yellow("% Rate", 6),
 		cz.Yellow("Size", 4),
 		cz.Yellow("Burst", 5),
 		cz.Yellow("TTL", 3),
@@ -139,22 +161,28 @@ func (ps *PageSingleMode) configTable(table *tview.Table) {
 
 	for v := 0; v < pktgen.portCnt; v++{
 
+		rate := func() string {
+			if pktgen.single[v].TxCount == 0 {
+				return "Forever"
+			}
+			return fmt.Sprintf("%v", single[v].TxCount)
+		}
 		rowData := []string{
 			cz.Yellow(v),
-			cz.CornSilk("Forever"),
-			cz.DeepPink(fmt.Sprintf("%3d%%", 100)),
-			cz.LightCoral(64),
-			cz.LightCoral(128),
-			cz.LightCoral(64),
-			cz.LightCoral(1234),
-			cz.LightCoral(5678),
-			cz.LightBlue("IPv4"),
-			cz.LightBlue("UDP"),
-			cz.Cyan(v+1),
-			cz.CornSilk("198.18.0.1"),
-			cz.CornSilk("198.18.0.1/24"),
-			cz.Green("1234:5678:9000"),
-			cz.Green("5678:1234:0001"),
+			cz.CornSilk(rate()),
+			cz.DeepPink(fmt.Sprintf("%v", single[v].PercentRate)),
+			cz.LightCoral(single[v].PktSize),
+			cz.LightCoral(single[v].BurstCount),
+			cz.LightCoral(single[v].TimeToLive),
+			cz.LightCoral(single[v].SrcPort),
+			cz.LightCoral(single[v].DstPort),
+			cz.LightBlue(single[v].IPType),
+			cz.LightBlue(single[v].ProtoType),
+			cz.Cyan(single[v].VlanId+1),
+			cz.CornSilk(single[v].DstIP.IP.String()),
+			cz.CornSilk(single[v].SrcIP.String()),
+			cz.Green(single[v].DstMAC.String()),
+			cz.Green(single[v].SrcMAC.String()),
 			}
 		for i, d := range rowData {
 			if i == 0 {

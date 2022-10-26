@@ -39,6 +39,7 @@
 			"cpudata",
 			"devbind",
 			"devlist",
+			"DPDK",
 			"Dropin",
 			"Errin",
 			"Errout",

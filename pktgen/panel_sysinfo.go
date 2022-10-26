@@ -284,7 +284,7 @@ func (ps *PageSysInfo) displayHostNet(view *tview.Table) {
 		cz.Yellow("Tx Drop"),
 		cz.Yellow("Flags"),
 		cz.Yellow("MAC"),
-		cz.Yellow(" ", 4),
+		cz.Yellow(" ", 20),
 	}
 	row = TableSetHeaders(view, 0, 0, titles)
 
