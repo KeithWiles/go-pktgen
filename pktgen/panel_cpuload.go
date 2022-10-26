@@ -217,7 +217,7 @@ func (pg *PageCPULoad) displayLayout(view *tview.Table) {
 	view.ScrollToBeginning()
 }
 
-// Grab the percent load dat and display the meters
+// Grab the percent load data and display the meters
 func (pg *PageCPULoad) displayLoadData(view *tview.TextView, flg int) {
 
 	cd := pktgen.cpuData

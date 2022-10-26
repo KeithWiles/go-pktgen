@@ -5,8 +5,9 @@ package main
 
 import (
 	"fmt"
-	"sync"
+	"math"
 	"net"
+	"sync"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -24,9 +25,11 @@ type PageSingleMode struct {
 	singleConfig *tview.Table
 	singleStats  *tview.Table
 	singleSizes  *tview.Table
+	singlePerf   *tview.TextView
 	configOnce   sync.Once
 	statsOnce    sync.Once
 	selectOnce   sync.Once
+	ppsPerPort      []float64
 }
 
 const (
@@ -96,11 +99,15 @@ func SingleModePanelSetup(nextSlide func()) (pageName string, content tview.Prim
 		SetFixed(1, 1).
 		SetSeparator(tview.Borders.Vertical)
 
+	ps.singlePerf = CreateTextView(flex1, "Performance (p)", tview.AlignLeft, 0, 1, true)
+	ps.ppsPerPort = make([]float64, 8)
+
 	flex0.AddItem(flex1, 0, 1, true)
 
 	to.Add("singleStats", ps.singleStats, 's')
 	to.Add("singleSizes", ps.singleSizes, 'S')
 	to.Add("singleConfig", ps.singleConfig, 'c')
+	to.Add("singlePerf", ps.singlePerf, 'p')
 	to.SetInputDone()
 
 	ps.topFlex = flex0
@@ -129,6 +136,7 @@ func (ps *PageSingleMode) displaySingleMode(step int, ticks uint64) {
 		ps.configTable(ps.singleConfig)
 		ps.displayStats(ps.singleStats)
 		ps.displaySizes(ps.singleSizes)
+		ps.displayPerf(ps.singlePerf)
 	}
 }
 
@@ -159,7 +167,7 @@ func (ps *PageSingleMode) configTable(table *tview.Table) {
 	}
 	row = TableSetHeaders(ps.singleConfig, 0, 0, titles)
 
-	for v := 0; v < pktgen.portCnt; v++{
+	for v := 0; v < pktgen.portCnt; v++ {
 
 		rate := func() string {
 			if pktgen.single[v].TxCount == 0 {
@@ -178,12 +186,12 @@ func (ps *PageSingleMode) configTable(table *tview.Table) {
 			cz.LightCoral(single[v].DstPort),
 			cz.LightBlue(single[v].IPType),
 			cz.LightBlue(single[v].ProtoType),
-			cz.Cyan(single[v].VlanId+1),
+			cz.Cyan(single[v].VlanId + 1),
 			cz.CornSilk(single[v].DstIP.IP.String()),
 			cz.CornSilk(single[v].SrcIP.String()),
 			cz.Green(single[v].DstMAC.String()),
 			cz.Green(single[v].SrcMAC.String()),
-			}
+		}
 		for i, d := range rowData {
 			if i == 0 {
 				col = TableCellSelect(table, row, 0, d)
@@ -191,7 +199,7 @@ func (ps *PageSingleMode) configTable(table *tview.Table) {
 				col = TableCellSet(table, row, col, d)
 			}
 		}
-	
+
 		row++
 	}
 	ps.configOnce.Do(func() {
@@ -243,7 +251,7 @@ func (ps *PageSingleMode) displayStats(table *tview.Table) {
 		return p.Sprintf("%d", n)
 	}
 
-	for v := 0; v < pktgen.portCnt; v++{
+	for v := 0; v < pktgen.portCnt; v++ {
 
 		rowData := []string{
 			cz.Yellow(v),
@@ -335,4 +343,68 @@ func (ps *PageSingleMode) displaySizes(table *tview.Table) {
 	ps.statsOnce.Do(func() {
 		ps.singleStats.ScrollToBeginning()
 	})
+}
+
+// Grab the load data and display the meters
+func (ps *PageSingleMode) displayPerf(view *tview.TextView) {
+
+	ps.displayLoad(ps.ppsPerPort, 0, int16(pktgen.portCnt), view)
+}
+
+// Display the load meters
+func (ps *PageSingleMode) displayLoad(pps []float64, start, end int16, view *tview.TextView) {
+
+	_, _, width, _ := view.GetInnerRect()
+
+	width -= 14
+	if width <= 0 {
+		return
+	}
+	str := ""
+
+	str += fmt.Sprintf("%s\n", cz.Orange("Port   PPS          Load Meter"))
+
+	for i := start; i < end; i++ {
+		str += ps.drawMeter(i, pps[i], width)
+	}
+
+	view.SetText(str)
+	view.ScrollToBeginning()
+}
+
+// clamp the data to a fixed set of ranges
+func clampPerf(x, low, high float64) float64 {
+
+	if x > high {
+		return high
+	}
+	if x < low {
+		return low
+	}
+	return x
+}
+
+// Draw the meter for the load
+func (ps *PageSingleMode) drawMeter(id int16, pps float64, width int) string {
+
+	var total uint64 = 100
+
+	p := clampPerf(float64(pps), 0, float64(total))
+	if p > 0 {
+		p = math.Ceil((float64(p) / float64(total)) * float64(width))
+	}
+
+	bar := make([]byte, width)
+
+	for i := 0; i < width; i++ {
+		if i <= int(p) {
+			bar[i] = '|'
+		} else {
+			bar[i] = ' '
+		}
+	}
+	str := fmt.Sprintf("%3d:%s [%s]\n",
+		id, cz.Red(pps, 5, 1), cz.Yellow(string(bar)))
+
+	return str
 }
