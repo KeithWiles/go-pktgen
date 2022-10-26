@@ -1,4 +1,4 @@
-module github.com/pktgen/go-pktgen/pkgs/utils
+module github.com/KeithWiles/go-pktgen/pkgs/utils
 
 go 1.18
 

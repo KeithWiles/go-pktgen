@@ -10,10 +10,10 @@ import (
 
 	"github.com/rivo/tview"
 
-	"github.com/pktgen/go-pktgen/pkgs/devbind"
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tab "github.com/pktgen/go-pktgen/pkgs/taborder"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	"github.com/KeithWiles/go-pktgen/pkgs/devbind"
+	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // Display the dpdk_devbind.py information in windows to be examined.
@@ -135,7 +135,7 @@ func DevBindPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 	pg := setupDevBind()
 
 	// Create a taborder object to setup tab order and single key selection
-	to := tab.New(devbindPanelName, perfmon.app)
+	to := tab.New(devbindPanelName, pktgen.app)
 	pg.tabOrder = to
 
 	top := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -153,7 +153,7 @@ func DevBindPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 		ti[td.name].view = CreateTableView(flex, s, td.align, td.fixedSize, td.proportion, td.focus)
 
 		// Add the single key and define the tab order.
-		to.Add(ti[td.name].view, td.key)
+		to.Add(fmt.Sprintf("Table-%v", td.key), ti[td.name].view, td.key)
 	}
 
 	to.SetInputDone()
@@ -163,7 +163,7 @@ func DevBindPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 	pg.topFlex = top
 
 	// Set up the timers with callback to display the data in the windows
-	perfmon.timers.Add(devbindPanelName, func(step int, ticks uint64) {
+	pktgen.timers.Add(devbindPanelName, func(step int, ticks uint64) {
 		switch step {
 		case 0:
 			for _, t := range pg.tInfos {
@@ -171,7 +171,7 @@ func DevBindPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 			}
 		case 2:
 			if pg.topFlex.HasFocus() {
-				perfmon.app.QueueUpdateDraw(func() {
+				pktgen.app.QueueUpdateDraw(func() {
 					pg.displayDevBindPanel(step)
 				})
 			}

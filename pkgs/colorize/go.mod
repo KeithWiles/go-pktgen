@@ -1,4 +1,4 @@
-module github.com/pktgen/go-pktgen/pkgs/colorize
+module github.com/KeithWiles/go-pktgen/pkgs/colorize
 
 go 1.18
 

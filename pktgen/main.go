@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	"github.com/KeithWiles/go-pktgen/pkgs/cpudata"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	flags "github.com/jessevdk/go-flags"
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
-	"github.com/pktgen/go-pktgen/pkgs/cpudata"
 
+	"github.com/KeithWiles/go-pktgen/pkgs/etimers"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/pktgen/go-pktgen/pkgs/etimers"
 )
 
 const (
@@ -139,6 +139,7 @@ func main() {
 	panels := []Panels{
 		SingleModePanelSetup,
 		SysInfoPanelSetup,
+		DevBindPanelSetup,
 		CPULoadPanelSetup,
 	}
 

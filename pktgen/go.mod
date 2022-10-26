@@ -1,26 +1,28 @@
-module github.com/pktgen/go-pktgen
+module github.com/KeithWiles/go-pktgen
 
-replace github.com/pktgen/go-pktgen/pkgs/ttylog => ../pkgs/ttylog
+replace github.com/KeithWiles/go-pktgen/pkgs/ttylog => ../pkgs/ttylog
 
-replace github.com/pktgen/go-pktgen/pkgs/colorize => ../pkgs/colorize
+replace github.com/KeithWiles/go-pktgen/pkgs/colorize => ../pkgs/colorize
 
-replace github.com/pktgen/go-pktgen/pkgs/cpudata => ../pkgs/cpudata
+replace github.com/KeithWiles/go-pktgen/pkgs/cpudata => ../pkgs/cpudata
 
-replace github.com/pktgen/go-pktgen/pkgs/etimers => ../pkgs/etimers
+replace github.com/KeithWiles/go-pktgen/pkgs/etimers => ../pkgs/etimers
 
-replace github.com/pktgen/go-pktgen/pkgs/devbind => ../pkgs/devbind
+replace github.com/KeithWiles/go-pktgen/pkgs/devbind => ../pkgs/devbind
+
+replace github.com/KeithWiles/go-pktgen/pkgs/taborder => ../pkgs/taborder
 
 go 1.19
 
 require (
+	github.com/KeithWiles/go-pktgen/pkgs/colorize v0.0.0-00010101000000-000000000000
+	github.com/KeithWiles/go-pktgen/pkgs/cpudata v0.0.0-00010101000000-000000000000
+	github.com/KeithWiles/go-pktgen/pkgs/devbind v0.0.0-00010101000000-000000000000
+	github.com/KeithWiles/go-pktgen/pkgs/etimers v0.0.0-00010101000000-000000000000
+	github.com/KeithWiles/go-pktgen/pkgs/taborder v0.0.0-20221022153719-9c0f739786b4
+	github.com/KeithWiles/go-pktgen/pkgs/ttylog v0.0.0-00010101000000-000000000000
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/pktgen/go-pktgen/pkgs/colorize v0.0.0-00010101000000-000000000000
-	github.com/pktgen/go-pktgen/pkgs/cpudata v0.0.0-00010101000000-000000000000
-	github.com/pktgen/go-pktgen/pkgs/devbind v0.0.0-00010101000000-000000000000
-	github.com/pktgen/go-pktgen/pkgs/etimers v0.0.0-00010101000000-000000000000
-	github.com/pktgen/go-pktgen/pkgs/taborder v0.0.0-20221022153719-9c0f739786b4
-	github.com/pktgen/go-pktgen/pkgs/ttylog v0.0.0-00010101000000-000000000000
 	github.com/rivo/tview v0.0.0-20220916081518-2e69b7385a37
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	golang.org/x/text v0.3.7

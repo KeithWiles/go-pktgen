@@ -5,10 +5,11 @@ package main
 
 import (
 	"fmt"
+
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
 )
 
 const (

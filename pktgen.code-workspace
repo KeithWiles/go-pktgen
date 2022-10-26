@@ -17,6 +17,10 @@
 			"path": "pkgs/cpudata"
 		}
 		{
+			"name": "devbind",
+			"path": "pkgs/devbind"
+		},
+		{
 			"name": "etimers",
 			"path": "pkgs/etimers"
 		},

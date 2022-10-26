@@ -1,4 +1,4 @@
-module github.com/pktgen/go-pktgen/pkgs/cpudata
+module github.com/KeithWiles/go-pktgen/pkgs/cpudata
 
 go 1.18
 

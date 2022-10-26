@@ -6,8 +6,8 @@ package main
 import (
 	"fmt"
 
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
 	"github.com/gdamore/tcell/v2"
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
 	"github.com/rivo/tview"
 )
 

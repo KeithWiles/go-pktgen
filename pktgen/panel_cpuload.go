@@ -11,21 +11,21 @@ import (
 	"github.com/rivo/tview"
 	"github.com/shirou/gopsutil/cpu"
 
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tab "github.com/pktgen/go-pktgen/pkgs/taborder"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // PageCPULoad - Data for main page information
 type PageCPULoad struct {
-	topFlex         *tview.Flex
-	cpuInfo         *tview.TextView
-	cpuLayout       *tview.Table
-	cpuInfo1        *tview.TextView
-	cpuInfo2        *tview.TextView
-	cpuInfo3        *tview.TextView
-	tabOrder        *tab.Tab
-	percent         []float64
+	topFlex   *tview.Flex
+	cpuInfo   *tview.TextView
+	cpuLayout *tview.Table
+	cpuInfo1  *tview.TextView
+	cpuInfo2  *tview.TextView
+	cpuInfo3  *tview.TextView
+	tabOrder  *tab.Tab
+	percent   []float64
 }
 
 const (
@@ -72,12 +72,12 @@ func CPULoadPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 	pg.cpuInfo3 = CreateTextView(flex2, "CPU Load (3)", tview.AlignLeft, 0, 1, false)
 	flex0.AddItem(flex2, 0, 4, true)
 
-	to.Add(pg.cpuInfo, 'c')
-	to.Add(pg.cpuLayout, 'l')
+	to.Add("cpuInfo", pg.cpuInfo, 'c')
+	to.Add("cpuLayout", pg.cpuLayout, 'l')
 
-	to.Add(pg.cpuInfo1, '1')
-	to.Add(pg.cpuInfo2, '2')
-	to.Add(pg.cpuInfo3, '3')
+	to.Add("cpuInfo1", pg.cpuInfo1, '1')
+	to.Add("cpuInfo2", pg.cpuInfo2, '2')
+	to.Add("cpuInfo3", pg.cpuInfo3, '3')
 
 	to.SetInputDone()
 

@@ -8,7 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/davecgh/go-spew/spew"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // DeviceID type

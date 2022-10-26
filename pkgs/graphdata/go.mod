@@ -1,13 +1,13 @@
-module github.com/pktgen/go-pktgen/pkgs/graphdata
+module github.com/KeithWiles/go-pktgen/pkgs/graphdata
 
-replace github.com/pktgen/go-pktgen/pkgs/asciichart => ../asciichart
+replace github.com/KeithWiles/go-pktgen/pkgs/asciichart => ../asciichart
 
-replace github.com/pktgen/go-pktgen/pkgs/ttylog => ../ttylog
+replace github.com/KeithWiles/go-pktgen/pkgs/ttylog => ../ttylog
 
 go 1.18
 
 require (
-	github.com/pktgen/go-pktgen/pkgs/asciichart v0.0.0-00010101000000-000000000000
+	github.com/KeithWiles/go-pktgen/pkgs/asciichart v0.0.0-00010101000000-000000000000
 	github.com/rivo/tview v0.0.0-20220307222120-9994674d60a8
 )
 

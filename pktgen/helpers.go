@@ -8,9 +8,9 @@ import (
 	"os"
 	"sync"
 
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	"github.com/shirou/gopsutil/cpu"
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
 )
 
 var numCPUs int

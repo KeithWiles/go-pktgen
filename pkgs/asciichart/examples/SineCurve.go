@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/pktgen/go-pktgen/pkgs/asciichart"
+	"github.com/KeithWiles/go-pktgen/pkgs/asciichart"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // etimers is a package to handle timers for the performance monitor tool.

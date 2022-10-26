@@ -15,17 +15,17 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/net"
 
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tab "github.com/pktgen/go-pktgen/pkgs/taborder"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // PageSysInfo - Data for main page information
 type PageSysInfo struct {
-	topFlex         *tview.Flex
-	host            *tview.TextView
-	mem             *tview.TextView
-	hostNet         *tview.Table
+	topFlex *tview.Flex
+	host    *tview.TextView
+	mem     *tview.TextView
+	hostNet *tview.Table
 }
 
 const (
@@ -72,9 +72,9 @@ func SysInfoPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 		SetSeparator(tview.Borders.Vertical)
 	flex0.AddItem(flex1, 0, 3, true)
 
-	to.Add(pg.host, 'h')
-	to.Add(pg.mem, 'm')
-	to.Add(pg.hostNet, 'n')
+	to.Add("host", pg.host, 'h')
+	to.Add("memory", pg.mem, 'm')
+	to.Add("hostName", pg.hostNet, 'n')
 
 	to.SetInputDone()
 
@@ -196,8 +196,8 @@ func (pg *PageSysInfo) displayHostNet(view *tview.Table) {
 	setCell := func(row, col int, value string, left bool) int {
 		align := tview.AlignRight
 		if left {
-            align = tview.AlignLeft
-        }
+			align = tview.AlignLeft
+		}
 		tableCell := tview.NewTableCell(value).
 			SetAlign(align).
 			SetSelectable(false)

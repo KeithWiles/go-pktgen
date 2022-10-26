@@ -4,7 +4,7 @@
 package graphdata
 
 import (
-	"github.com/pktgen/go-pktgen/pkgs/asciichart"
+	"github.com/KeithWiles/go-pktgen/pkgs/asciichart"
 	"github.com/rivo/tview"
 )
 

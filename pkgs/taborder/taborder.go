@@ -6,7 +6,7 @@ package taborder
 import (
 	"fmt"
 
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -21,6 +21,7 @@ type TabInfo struct {
 	Index int
 	View  interface{}
 	EKey  *tcell.EventKey
+	Name  string
 }
 
 // Tab for all windows in a panel
@@ -38,20 +39,18 @@ func New(name string, appl *tview.Application) *Tab {
 }
 
 // Add to the given list of windows
-func (to *Tab) Add(w interface{}, key interface{}) (*TabInfo, error) {
+func (to *Tab) Add(name string, w interface{}, key interface{}) (*TabInfo, error) {
 	if to == nil {
-		return nil, fmt.Errorf("invalid tabOrderInfo pointer")
+		return nil, fmt.Errorf("invalid tabOrder pointer")
 	}
 
-	tab := &TabInfo{View: w}
+	tab := &TabInfo{View: w, Name: name}
 
 	if key != nil {
-		switch key.(type) {
+		switch k := key.(type) {
 		case tcell.Key:
-			k := key.(tcell.Key)
 			tab.EKey = tcell.NewEventKey(k, 0, tcell.ModNone)
 		case rune:
-			k := key.(rune)
 			tab.EKey = tcell.NewEventKey(tcell.KeyRune, k, tcell.ModNone)
 		}
 	}
@@ -59,10 +58,11 @@ func (to *Tab) Add(w interface{}, key interface{}) (*TabInfo, error) {
 	tab.Index = len(to.TabList)
 
 	to.TabList = append(to.TabList, tab)
+
 	if len(to.TabList) == 1 {
-		to.ColorBorder(tab.View, highlightBorderColor)
+		to.colorBorder(tab.View, highlightBorderColor)
 	} else {
-		to.ColorBorder(tab.View, defaultBorderColor)
+		to.colorBorder(tab.View, defaultBorderColor)
 	}
 
 	return tab, nil
@@ -78,34 +78,29 @@ func (to *Tab) SetHighlightBorderColor(color tcell.Color) {
 	highlightBorderColor = color
 }
 
-// SetFocus to the tview primitive
-func (to *Tab) SetFocus(a interface{}) {
+// setFocus to the tview primitive
+func (to *Tab) setFocus(a interface{}) {
 
-	switch a.(type) {
+	tlog.DoPrintf("SetFocus: %T\n", a)
+	switch t := a.(type) {
 	case *tview.TextView:
-		t := a.(*tview.TextView)
 		to.Appl.SetFocus(t)
 	case *tview.Table:
-		t := a.(*tview.Table)
 		to.Appl.SetFocus(t)
 	case *tview.Form:
-		t := a.(*tview.Form)
 		to.Appl.SetFocus(t)
 	}
 }
 
-// ColorBorder to the tview
-func (to *Tab) ColorBorder(a interface{}, color tcell.Color) {
+// colorBorder to the tview
+func (to *Tab) colorBorder(a interface{}, color tcell.Color) {
 
-	switch a.(type) {
+	switch t:= a.(type) {
 	case *tview.TextView:
-		t := a.(*tview.TextView)
 		t.Box.SetBorderColor(color)
 	case *tview.Table:
-		t := a.(*tview.Table)
 		t.Box.SetBorderColor(color)
 	case *tview.Form:
-		t := a.(*tview.Form)
 		t.Box.SetBorderColor(color)
 	}
 }
@@ -125,9 +120,9 @@ func (to *Tab) inputCapture(ek *tcell.EventKey) *tcell.EventKey {
 
 	if ek.Key() != tcell.KeyBacktab && ek.Key() != tcell.KeyTab {
 		if tab := to.findKey(ek); tab != nil {
-			to.ColorBorder(to.TabList[to.Index].View, defaultBorderColor)
-			to.SetFocus(tab.View)
-			to.ColorBorder(tab.View, highlightBorderColor)
+			to.colorBorder(to.TabList[to.Index].View, defaultBorderColor)
+			to.setFocus(tab.View)
+			to.colorBorder(tab.View, highlightBorderColor)
 			to.Prev, to.Index = to.Index, tab.Index
 		} else {
 			tlog.DebugPrintf("EventKey: not found\n")
@@ -136,11 +131,34 @@ func (to *Tab) inputCapture(ek *tcell.EventKey) *tcell.EventKey {
 	return ek
 }
 
+// SetInputFocus sets the focus to the given event
+func (to *Tab) SetInputFocus(key interface{}) {
+
+	var eKey *tcell.EventKey
+
+	switch k := key.(type) {
+	case tcell.Key:
+		eKey = tcell.NewEventKey(k, 0, tcell.ModNone)
+	case rune:
+		eKey = tcell.NewEventKey(tcell.KeyRune, k, tcell.ModNone)
+	}
+
+	if tab := to.findKey(eKey); tab != nil {
+		tlog.DoPrintf("tab: %v, to.Index: %v\n", tab, to.Index)
+		to.colorBorder(to.TabList[to.Index].View, defaultBorderColor)
+		to.setFocus(tab.View)
+		to.colorBorder(tab.View, highlightBorderColor)
+		to.Prev, to.Index = to.Index, tab.Index
+	} else {
+		tlog.DoPrintf("EventKey: not found\n")
+	}
+}
+
 // doDone key handling for Tab and Backtab
 func (to *Tab) doDone(key tcell.Key) {
 
 	p := to.TabList[to.Index]
-	to.ColorBorder(p.View, defaultBorderColor)
+	to.colorBorder(p.View, defaultBorderColor)
 
 	if key == tcell.KeyBacktab {
 		if to.Index == 0 {
@@ -156,8 +174,8 @@ func (to *Tab) doDone(key tcell.Key) {
 		}
 	}
 
-	to.SetFocus(p.View)
-	to.ColorBorder(p.View, highlightBorderColor)
+	to.setFocus(p.View)
+	to.colorBorder(p.View, highlightBorderColor)
 
 	to.Prev, to.Index = to.Index, p.Index
 }
@@ -165,15 +183,12 @@ func (to *Tab) doDone(key tcell.Key) {
 // setInput for tview
 func (to *Tab) setInput(a interface{}, inputFunc func(ev *tcell.EventKey) *tcell.EventKey) {
 
-	switch a.(type) {
+	switch t:= a.(type) {
 	case *tview.TextView:
-		t := a.(*tview.TextView)
 		t.SetInputCapture(inputFunc)
 	case *tview.Table:
-		t := a.(*tview.Table)
 		t.SetInputCapture(inputFunc)
 	case *tview.Form:
-		t := a.(*tview.Form)
 		t.SetInputCapture(inputFunc)
 	}
 }
@@ -181,12 +196,10 @@ func (to *Tab) setInput(a interface{}, inputFunc func(ev *tcell.EventKey) *tcell
 // setDone function for tview
 func (to *Tab) setDone(a interface{}, doneFunc func(key tcell.Key)) {
 
-	switch a.(type) {
+	switch t := a.(type) {
 	case *tview.TextView:
-		t := a.(*tview.TextView)
 		t.SetDoneFunc(doneFunc)
 	case *tview.Table:
-		t := a.(*tview.Table)
 		t.SetDoneFunc(doneFunc)
 	case *tview.Form:
 		// add support for done function in Form views

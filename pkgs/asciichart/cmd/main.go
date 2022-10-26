@@ -13,7 +13,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/pktgen/go-pktgen/pkgs/asciichart"
+	"github.com/KeithWiles/go-pktgen/pkgs/asciichart"
 )
 
 var (

@@ -6,14 +6,15 @@ package main
 import (
 	"fmt"
 	"sync"
+
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
 	"github.com/rivo/tview"
 
-	cz "github.com/pktgen/go-pktgen/pkgs/colorize"
-	tab "github.com/pktgen/go-pktgen/pkgs/taborder"
-	tlog "github.com/pktgen/go-pktgen/pkgs/ttylog"
+	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
+	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
 
 // PageSingleMode - Data for main page information
@@ -24,6 +25,7 @@ type PageSingleMode struct {
 	singleSizes  *tview.Table
 	configOnce   sync.Once
 	statsOnce    sync.Once
+	selectOnce   sync.Once
 }
 
 const (
@@ -76,15 +78,18 @@ func SingleModePanelSetup(nextSlide func()) (pageName string, content tview.Prim
 
 	flex0.AddItem(flex1, 0, 1, true)
 
-	to.Add(ps.singleConfig, 'c')
-	to.Add(ps.singleStats, 's')
-	to.Add(ps.singleSizes, 'S')
+	to.Add("singleStats", ps.singleStats, 's')
+	to.Add("singleSizes", ps.singleSizes, 'S')
+	to.Add("singleConfig", ps.singleConfig, 'c')
 	to.SetInputDone()
 
 	ps.topFlex = flex0
 
 	pktgen.timers.Add(singlePanelName, func(step int, ticks uint64) {
 		if ps.topFlex.HasFocus() {
+			ps.selectOnce.Do(func() {
+				to.SetInputFocus('c') // Select the config view after we have focus
+			})
 			pktgen.app.QueueUpdateDraw(func() {
 				ps.displaySingleMode(step, ticks)
 			})
@@ -287,7 +292,7 @@ func (ps *PageSingleMode) displaySizes(table *tview.Table) {
 			cz.Cyan(0),
 			cz.Cyan(0),
 			cz.DeepPink("0/0"),
-			cz.DeepPink("0/0"),
+			cz.Wheat("0/0"),
 		}
 		for i, d := range rowData {
 			if i == 0 {
