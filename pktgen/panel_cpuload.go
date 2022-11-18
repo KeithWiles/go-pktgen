@@ -5,13 +5,14 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/rivo/tview"
+	"github.com/gdamore/tcell/v2"
 	"github.com/shirou/gopsutil/cpu"
 
 	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
+	"github.com/KeithWiles/go-pktgen/pkgs/meter"
 	tab "github.com/KeithWiles/go-pktgen/pkgs/taborder"
 	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 )
@@ -26,10 +27,12 @@ type PageCPULoad struct {
 	cpuInfo3  *tview.TextView
 	tabOrder  *tab.Tab
 	percent   []float64
+	meter     *meter.Meter
 }
 
 const (
 	cpuPanelName string = "CPU"
+	labelWidth int = 14
 )
 
 func init() {
@@ -49,8 +52,8 @@ func setupCPULoad() *PageCPULoad {
 	return pg
 }
 
-// CPULoadPanelSetup setup the main cpu page
-func CPULoadPanelSetup(nextSlide func()) (pageName string, content tview.Primitive) {
+// CPULoadPanelSetup setup
+func CPULoadPanelSetup(pages *tview.Pages, nextSlide func()) (pageName string, content tview.Primitive) {
 
 	pg := setupCPULoad()
 
@@ -101,6 +104,46 @@ func CPULoadPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 		}
 	})
 
+	modal := tview.NewModal().
+		SetText("This is the Help Box: cpuInfoHelp Thank you for asking for help! Press Esc to close.").
+		AddButtons([]string{"Got it"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			pages.HidePage("cpuInfoHelp")
+		})
+	AddModalPage("cpuInfoHelp", modal)
+
+	flex0.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		k := event.Rune()
+		switch k {
+        case '?':
+            tlog.DoPrintf("Question Mark! HasPage(%v)\n", pages.HasPage("cpuInfoHelp"))
+			pages.ShowPage("cpuInfoHelp")
+		}
+		return event
+	})
+
+	pg.meter = meter.New().
+		SetWidth(func() int {
+			_, _, width, _ := pg.cpuInfo1.GetInnerRect()
+
+			return width
+		}).
+		SetDraw(func(mi *meter.Info) string {
+			var str string = ""
+
+			for _, l := range mi.Labels {
+
+				if l.Fn == nil {
+					l.Fn = cz.Default
+				}
+				str += l.Fn(l.Val)
+			}
+			str += fmt.Sprintf("[%s]\n", mi.Bar.Fn(mi.Bar.Val))
+			return str
+		}).
+		SetRateLimits(0.0, 100.0)
+
+
 	return cpuPanelName, pg.topFlex
 }
 
@@ -120,18 +163,6 @@ func (pg *PageCPULoad) displayCPULoad(step int, ticks uint64) {
 		pg.displayLoadData(pg.cpuInfo2, 2)
 		pg.displayLoadData(pg.cpuInfo3, 3)
 	}
-}
-
-// clamp the data to a fixed set of ranges
-func clamp(x, low, high float64) float64 {
-
-	if x > high {
-		return high
-	}
-	if x < low {
-		return low
-	}
-	return x
 }
 
 // Display the CPU information
@@ -238,7 +269,7 @@ func (pg *PageCPULoad) displayLoad(percent []float64, start, end int16, view *tv
 
 	_, _, width, _ := view.GetInnerRect()
 
-	width -= 14
+	width -= labelWidth
 	if width <= 0 {
 		return
 	}
@@ -247,34 +278,18 @@ func (pg *PageCPULoad) displayLoad(percent []float64, start, end int16, view *tv
 	str += fmt.Sprintf("%s\n", cz.Orange("Core Percent          Load Meter"))
 
 	for i := start; i < end; i++ {
-		str += pg.drawMeter(i, percent[i], width)
+		str += pg.meter.Draw(percent[i], &meter.Info{
+			Labels: []*meter.LabelInfo{
+				{Val: fmt.Sprintf("%3d", i), Fn: nil},
+				{Val: ":", Fn: nil},
+				{Val: fmt.Sprintf("%5.1f", percent[i]), Fn: cz.Red},
+				{Val: "%", Fn: nil},
+			},
+			Bar: &meter.LabelInfo{Val: "", Fn: cz.MediumSpringGreen},
+		})
 	}
+	str = str[:len(str) - 1]	// Strip the last newline character
 
 	view.SetText(str)
 	view.ScrollToBeginning()
-}
-
-// Draw the meter for the load
-func (pg *PageCPULoad) drawMeter(id int16, percent float64, width int) string {
-
-	total := 100.0
-
-	p := clamp(percent, 0.0, total)
-	if p > 0 {
-		p = math.Ceil((p / total) * float64(width))
-	}
-
-	bar := make([]byte, width)
-
-	for i := 0; i < width; i++ {
-		if i <= int(p) {
-			bar[i] = '|'
-		} else {
-			bar[i] = ' '
-		}
-	}
-	str := fmt.Sprintf("%3d:%s%% [%s]\n",
-		id, cz.Red(percent, 5, 1), cz.Yellow(string(bar)))
-
-	return str
 }

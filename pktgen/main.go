@@ -13,16 +13,18 @@ import (
 
 	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
 	"github.com/KeithWiles/go-pktgen/pkgs/cpudata"
+	"github.com/KeithWiles/go-pktgen/pkgs/cfg"
 	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	flags "github.com/jessevdk/go-flags"
 
 	"github.com/KeithWiles/go-pktgen/pkgs/etimers"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 const (
-	// pmeVersion string
+	// pktgenVersion string
 	pktgenVersion = "22.10.0"
 )
 
@@ -35,7 +37,12 @@ type PanelInfo struct {
 // Panels is a function which returns the feature's main primitive and its title.
 // It receives a "nextFeature" function which can be called to advance the
 // presentation to the next slide.
-type Panels func(nextPanel func()) (title string, content tview.Primitive)
+type Panels func(pages *tview.Pages, nextPanel func()) (title string, content tview.Primitive)
+
+type ModalPage struct {
+	title string
+	modal interface{}
+}
 
 // Pktgen for monitoring and system performance data
 type Pktgen struct {
@@ -45,14 +52,14 @@ type Pktgen struct {
 	cpuData *cpudata.CPUData
 	panels  []PanelInfo
 	portCnt int
-	single  []SinglePacketConfig
+	single  []*SinglePacketConfig
+	ModalPages []*ModalPage
 }
 
 // Options command line options
 type Options struct {
+	Config      string `short:"c" long:"config" description:"JSON configuration file"`
 	Ptty        string `short:"p" long:"ptty" description:"path to ptty /dev/pts/X"`
-	Dbg         bool   `short:"D" long:"debug" description:"Wait 15 seconds (default) to connect debugger"`
-	WaitTime    uint   `short:"W" long:"wait-time" description:"N seconds before startup" default:"15"`
 	ShowVersion bool   `short:"V" long:"version" description:"Print out version and exit"`
 	Verbose     bool   `short:"v" long:"Verbose output for debugging"`
 }
@@ -101,12 +108,16 @@ func init() {
 	pktgen.cpuData = cd
 	pktgen.portCnt = 8
 
-	pktgen.single = make([]SinglePacketConfig, 8)
+	pktgen.single = make([]*SinglePacketConfig, 8)
 }
 
 // Version number string
 func Version() string {
 	return pktgen.version
+}
+
+func AddModalPage(title string, modal interface{}) {
+	pktgen.ModalPages = append(pktgen.ModalPages, &ModalPage{title: title, modal: modal})
 }
 
 func main() {
@@ -127,8 +138,19 @@ func main() {
 		}
 	}
 	if options.ShowVersion {
-		fmt.Printf("PME Version: %s\n", pktgen.version)
+		fmt.Printf("Go-Pktgen Version: %s\n", pktgen.version)
 		return
+	}
+
+	if len(options.Config) > 0 {
+		_, err = cfg.OpenWithFile(options.Config)
+        if err != nil {
+            fmt.Printf("load configuration failed: %s\n", err)
+            os.Exit(1)
+        }
+	} else {
+		fmt.Printf("No configuration file specified\n")
+        os.Exit(1)
 	}
 
 	tlog.Log(mainLog, "\n===== %s =====\n", PktgenInfo(false))
@@ -140,8 +162,8 @@ func main() {
 	pktgen.timers.Start()
 
 	panels := []Panels{
-		SysInfoPanelSetup,
 		SingleModePanelSetup,
+		SysInfoPanelSetup,
 		CPULoadPanelSetup,
 	}
 
@@ -155,6 +177,7 @@ func main() {
 	info.Highlight(strconv.Itoa(currentPanel))
 
 	pages := tview.NewPages()
+	panel := tview.NewFlex()
 
 	previousPanel := func() {
 		currentPanel = (currentPanel - 1 + len(panels)) % len(panels)
@@ -172,35 +195,20 @@ func main() {
 		info.SetText(buildPanelString(currentPanel))
 	}
 
-	modal := tview.NewModal().
-		SetText("This is the Help Box: it is a pop-up model that will display detailed information about the current panel's data. Thank you for asking for help! Press Esc to close.").
-		AddButtons([]string{"Got it", "Cancel"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonLabel == "Got it" {
-				app.SetFocus(pages.SwitchToPage(strconv.Itoa(currentPanel)))
-			} else if buttonLabel == "Cancel" {
-				/*if err := pages.SwitchToPage(strconv.Itoa(currentPanel)); err != nil {
-					panic(err)
-				}*/
-			}
-		})
-
-	panelHelp := func() {
-		if err := app.SetRoot(modal, false).SetFocus(modal).Run(); err != nil {
-			panic(err)
-		}
-	}
-
 	for index, f := range panels {
-		title, primitive := f(nextPanel)
+		title, primitive := f(pages, nextPanel)
 		pages.AddPage(strconv.Itoa(index), primitive, true, index == currentPanel)
 		pktgen.panels = append(pktgen.panels, PanelInfo{title: title, primitive: primitive})
 	}
+
+	for _, m := range pktgen.ModalPages {
+		pages.AddPage(m.title, m.modal.(tview.Primitive), false, false)
+	}
+
 	info.SetText(buildPanelString(0))
 
 	// Create the main panel.
-	panel := tview.NewFlex().
-		SetDirection(tview.FlexRow).
+	panel.SetDirection(tview.FlexRow).
 		AddItem(pages, 0, 1, true).
 		AddItem(info, 1, 1, false)
 
@@ -212,13 +220,11 @@ func main() {
 			previousPanel()
 		} else if event.Key() == tcell.KeyCtrlQ {
 			app.Stop()
-		} else if event.Key() == tcell.KeyCtrlH {
-			panelHelp()
 		} else {
 			var idx int
 
 			switch {
-			case tcell.KeyF1 <= event.Key() && event.Key() <= tcell.KeyF19:
+			case event.Key() >= tcell.KeyF1 && event.Key() <= tcell.KeyF19:
 				idx = int(event.Key() - tcell.KeyF1)
 			case event.Rune() == 'q':
 				app.Stop()
@@ -239,13 +245,8 @@ func main() {
 
 	setupSignals(syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV)
 
-	if options.Dbg {
-		fmt.Printf("Waiting %d seconds for dlv to attach\n", options.WaitTime)
-		time.Sleep(time.Second * time.Duration(options.WaitTime))
-	}
-
 	// Start the application.
-	if err := app.SetRoot(panel, true).Run(); err != nil {
+	if err := app.SetRoot(panel, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
 

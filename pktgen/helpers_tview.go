@@ -31,16 +31,15 @@ func Center(width, height int, p tview.Primitive) tview.Primitive {
 }
 
 // TitleBox to return the top title window
-func TitleBox(flex *tview.Flex) *tview.Box {
+func TitleBox(flex *tview.Flex) *tview.TextView {
 
-	box := tview.NewBox().
-		SetBorder(true).
-		SetTitle(PktgenInfo(true)).
-		SetTitleAlign(tview.AlignLeft)
+	textView := tview.NewTextView().SetDynamicColors(true)
+	
+	textView.SetText(PktgenInfo(true)).SetTextAlign(tview.AlignCenter)
 
-	flex.AddItem(box, 2, 1, false)
+	flex.AddItem(textView, 1, 1, false)
 
-	return box
+	return textView
 }
 
 func setTableCell(table *tview.Table, row, col int, value string, sel bool) int {
@@ -161,4 +160,11 @@ func SetCell(table *tview.Table, row, col int, msg string, a ...interface{}) *tv
 	table.SetCell(row, col, tableCell)
 
 	return tableCell
+}
+
+func CreateModal(p tview.Primitive, width, height int) tview.Primitive {
+    return tview.NewGrid().
+        SetColumns(0, width, 0).
+        SetRows(0, height, 0).
+        AddItem(p, 1, 1, 1, 1, 0, 0, true)
 }

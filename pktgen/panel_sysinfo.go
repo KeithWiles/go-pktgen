@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/rivo/tview"
+	"github.com/gdamore/tcell/v2"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/net"
@@ -127,7 +128,7 @@ func setupSysInfo() *PageSysInfo {
 }
 
 // SysInfoPanelSetup setup the main cpu page
-func SysInfoPanelSetup(nextSlide func()) (pageName string, content tview.Primitive) {
+func SysInfoPanelSetup(pages *tview.Pages, nextSlide func()) (pageName string, content tview.Primitive) {
 
 	ps := setupSysInfo()
 
@@ -170,6 +171,25 @@ func SysInfoPanelSetup(nextSlide func()) (pageName string, content tview.Primiti
 	to.SetInputDone()
 
 	ps.topFlex = flex0
+
+	modal := tview.NewModal().
+		SetText("This is the Help Box: sysInfoHelp  Thank you for asking for help! Press Esc to close.").
+		AddButtons([]string{"Got it"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			pages.HidePage("sysInfoHelp")
+		})
+	AddModalPage("sysInfoHelp", modal)
+
+	flex0.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		k := event.Rune()
+		switch k {
+        case '?':
+			pages.ShowPage("sysInfoHelp")
+        case '-':
+			pages.ShowPage("sysInfoWindow")
+		}
+		return event
+	})
 
 	// Setup static pages
 	ps.displayHost(ps.host)

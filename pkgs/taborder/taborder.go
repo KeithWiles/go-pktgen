@@ -6,7 +6,6 @@ package taborder
 import (
 	"fmt"
 
-	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -18,24 +17,24 @@ var (
 
 // TabInfo for windows on the current panel
 type TabInfo struct {
-	Index int
-	View  interface{}
-	EKey  *tcell.EventKey
-	Name  string
+	Index     int
+	View      interface{}
+	EKey      *tcell.EventKey
+	Name      string
 }
 
 // Tab for all windows in a panel
 type Tab struct {
-	Name    string
-	TabList []*TabInfo
-	Index   int
-	Prev    int
-	Appl    *tview.Application
+	Name          string
+	TabList       []*TabInfo
+	CurrentIndex  int
+	PreviousIndex int
+	Application   *tview.Application
 }
 
 // New information object
-func New(name string, appl *tview.Application) *Tab {
-	return &Tab{Name: name, Appl: appl}
+func New(name string, application *tview.Application) *Tab {
+	return &Tab{Name: name, Application: application}
 }
 
 // Add to the given list of windows
@@ -44,28 +43,28 @@ func (to *Tab) Add(name string, w interface{}, key interface{}) (*TabInfo, error
 		return nil, fmt.Errorf("invalid tabOrder pointer")
 	}
 
-	tab := &TabInfo{View: w, Name: name}
+	tabInfo := &TabInfo{View: w, Name: name}
 
 	if key != nil {
 		switch k := key.(type) {
 		case tcell.Key:
-			tab.EKey = tcell.NewEventKey(k, 0, tcell.ModNone)
+			tabInfo.EKey = tcell.NewEventKey(k, 0, tcell.ModNone)
 		case rune:
-			tab.EKey = tcell.NewEventKey(tcell.KeyRune, k, tcell.ModNone)
+			tabInfo.EKey = tcell.NewEventKey(tcell.KeyRune, k, tcell.ModNone)
 		}
 	}
 
-	tab.Index = len(to.TabList)
+	tabInfo.Index = len(to.TabList)
 
-	to.TabList = append(to.TabList, tab)
+	to.TabList = append(to.TabList, tabInfo)
 
 	if len(to.TabList) == 1 {
-		to.colorBorder(tab.View, highlightBorderColor)
+		to.colorBorder(tabInfo.View, highlightBorderColor)
 	} else {
-		to.colorBorder(tab.View, defaultBorderColor)
+		to.colorBorder(tabInfo.View, defaultBorderColor)
 	}
 
-	return tab, nil
+	return tabInfo, nil
 }
 
 // SetDefaultBorderColor to the normal non-selected border color
@@ -83,18 +82,18 @@ func (to *Tab) setFocus(a interface{}) {
 
 	switch t := a.(type) {
 	case *tview.TextView:
-		to.Appl.SetFocus(t)
+		to.Application.SetFocus(t)
 	case *tview.Table:
-		to.Appl.SetFocus(t)
+		to.Application.SetFocus(t)
 	case *tview.Form:
-		to.Appl.SetFocus(t)
+		to.Application.SetFocus(t)
 	}
 }
 
 // colorBorder to the tview
 func (to *Tab) colorBorder(a interface{}, color tcell.Color) {
 
-	switch t:= a.(type) {
+	switch t := a.(type) {
 	case *tview.TextView:
 		t.Box.SetBorderColor(color)
 	case *tview.Table:
@@ -119,12 +118,10 @@ func (to *Tab) inputCapture(ek *tcell.EventKey) *tcell.EventKey {
 
 	if ek.Key() != tcell.KeyBacktab && ek.Key() != tcell.KeyTab {
 		if tab := to.findKey(ek); tab != nil {
-			to.colorBorder(to.TabList[to.Index].View, defaultBorderColor)
+			to.colorBorder(to.TabList[to.CurrentIndex].View, defaultBorderColor)
 			to.setFocus(tab.View)
 			to.colorBorder(tab.View, highlightBorderColor)
-			to.Prev, to.Index = to.Index, tab.Index
-		} else {
-			tlog.DebugPrintf("EventKey: not found\n")
+			to.PreviousIndex, to.CurrentIndex = to.CurrentIndex, tab.Index
 		}
 	}
 	return ek
@@ -137,37 +134,41 @@ func (to *Tab) SetInputFocus(key interface{}) {
 
 	switch k := key.(type) {
 	case tcell.Key:
+		if k == 0 {
+			return
+		}
 		eKey = tcell.NewEventKey(k, 0, tcell.ModNone)
 	case rune:
 		eKey = tcell.NewEventKey(tcell.KeyRune, k, tcell.ModNone)
 	}
 
 	if tab := to.findKey(eKey); tab != nil {
-		tlog.DoPrintf("tab: %v, to.Index: %v\n", tab, to.Index)
-		to.colorBorder(to.TabList[to.Index].View, defaultBorderColor)
+		to.colorBorder(to.TabList[to.CurrentIndex].View, defaultBorderColor)
 		to.setFocus(tab.View)
 		to.colorBorder(tab.View, highlightBorderColor)
-		to.Prev, to.Index = to.Index, tab.Index
-	} else {
-		tlog.DoPrintf("EventKey: not found\n")
+		to.PreviousIndex, to.CurrentIndex = to.CurrentIndex, tab.Index
 	}
+}
+
+func (to *Tab) SetCurrentInputFocus() {
+	to.SetInputFocus(to.TabList[to.CurrentIndex].EKey)
 }
 
 // doDone key handling for Tab and Backtab
 func (to *Tab) doDone(key tcell.Key) {
 
-	p := to.TabList[to.Index]
+	p := to.TabList[to.CurrentIndex]
 	to.colorBorder(p.View, defaultBorderColor)
 
 	if key == tcell.KeyBacktab {
-		if to.Index == 0 {
+		if to.CurrentIndex == 0 {
 			p = to.TabList[len(to.TabList)-1]
 		} else {
-			p = to.TabList[to.Index-1]
+			p = to.TabList[to.CurrentIndex-1]
 		}
 	} else if key == tcell.KeyTab {
-		if to.Index < (len(to.TabList) - 1) {
-			p = to.TabList[to.Index+1]
+		if to.CurrentIndex < (len(to.TabList) - 1) {
+			p = to.TabList[to.CurrentIndex+1]
 		} else {
 			p = to.TabList[0]
 		}
@@ -176,13 +177,13 @@ func (to *Tab) doDone(key tcell.Key) {
 	to.setFocus(p.View)
 	to.colorBorder(p.View, highlightBorderColor)
 
-	to.Prev, to.Index = to.Index, p.Index
+	to.PreviousIndex, to.CurrentIndex = to.CurrentIndex, p.Index
 }
 
 // setInput for tview
 func (to *Tab) setInput(a interface{}, inputFunc func(ev *tcell.EventKey) *tcell.EventKey) {
 
-	switch t:= a.(type) {
+	switch t := a.(type) {
 	case *tview.TextView:
 		t.SetInputCapture(inputFunc)
 	case *tview.Table:
@@ -192,7 +193,7 @@ func (to *Tab) setInput(a interface{}, inputFunc func(ev *tcell.EventKey) *tcell
 	}
 }
 
-// setDone function for tview
+// setDone function for tabs
 func (to *Tab) setDone(a interface{}, doneFunc func(key tcell.Key)) {
 
 	switch t := a.(type) {
@@ -201,7 +202,6 @@ func (to *Tab) setDone(a interface{}, doneFunc func(key tcell.Key)) {
 	case *tview.Table:
 		t.SetDoneFunc(doneFunc)
 	case *tview.Form:
-		// add support for done function in Form views
 	}
 }
 

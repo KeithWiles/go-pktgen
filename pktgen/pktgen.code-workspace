@@ -1,46 +1,73 @@
 {
 	"folders": [
 		{
+			"name": "pktgen",
 			"path": "."
 		},
 		{
+			"name": "asciichart",
 			"path": "../pkgs/asciichart"
 		},
 		{
+			"name": "colorize",
 			"path": "../pkgs/colorize"
 		},
 		{
+			"name": "cfg",
+			"path": "../pkgs/cfg"
+		},
+		{
+			"name": "cpudata",
 			"path": "../pkgs/cpudata"
 		},
 		{
+			"name": "devbind",
 			"path": "../pkgs/devbind"
 		},
 		{
+			"name": "etimers",
 			"path": "../pkgs/etimers"
 		},
 		{
+			"name": "graphdata",
 			"path": "../pkgs/graphdata"
 		},
 		{
+			"name": "hexdump",
 			"path": "../pkgs/hexdump"
 		},
 		{
+			"name": "taborder",
 			"path": "../pkgs/taborder"
 		},
 		{
+			"name": "ttylog",
 			"path": "../pkgs/ttylog"
 		},
 		{
+			"name": "utils",
 			"path": "../pkgs/utils"
+		},
+		{
+			"name": "meter",
+			"path": "../pkgs/meter"
+		},
+		{
+			"name": "libs",
+			"path": "../libs"
 		}
 	],
 	"settings": {
 		"cSpell.words": [
+			"Backtab",
 			"cpudata",
+			"Curr",
 			"devbind",
 			"devlist",
 			"DPDK",
+			"dport",
 			"Dropin",
+			"epiclabs",
 			"Errin",
 			"Errout",
 			"etimers",
@@ -50,6 +77,7 @@
 			"ifaces",
 			"jessevdk",
 			"lcore",
+			"Mbits",
 			"NUMA",
 			"pkgs",
 			"pktgen",
@@ -63,7 +91,12 @@
 			"tlog",
 			"ttylog",
 			"tview",
-			"vsys"
-		]
+			"vsys",
+			"winman"
+		],
+		"files.associations": {
+			"pktgen.h": "c"
+		},
+		"meson.builddir": "/work/projects/intel/networking.dataplane/go-pktgen/pktgen/build"
 	}
 }

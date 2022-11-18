@@ -127,7 +127,7 @@ func SetDefaultFlags(f string) {
 }
 
 // Colorize - Add color to the value passed, w size can be 0, 1 or 2
-//   w[0] is the width and w[1] is precision or a float value if present
+//   w[0] is the width and w[1] is precision or a float value if present, left alignment use negative
 //   w[1] is not present then use default colorInfo.floatPrecision
 //   w[2] is the foreground color
 //   w[3] is the background color
@@ -150,9 +150,7 @@ func Colorize(color string, v interface{}, w ...interface{}) string {
 		switch i {
 		case 0: // Width of the field
 			p := v.(int)
-			if p >= 0 {
-				width = p
-			}
+			width = p
 		case 1: // Precision of the float value
 			p := v.(int)
 			if p >= 0 {
@@ -205,6 +203,12 @@ func ColorWithName(color string, a interface{}, w ...interface{}) string {
 		color = OrangeColor
 	}
 	return Colorize(color, a, w...)
+}
+
+// Default - The default color for the text
+func Default(a interface{}, w ...interface{}) string {
+
+	return ColorWithName(DefaultForegroundColor(), a, w...)
 }
 
 // Yellow - return string based on the color given

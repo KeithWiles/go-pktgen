@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"strconv"
 
 	cz "github.com/KeithWiles/go-pktgen/pkgs/colorize"
 	tlog "github.com/KeithWiles/go-pktgen/pkgs/ttylog"
@@ -23,7 +24,7 @@ func PktgenInfo(color bool) string {
 			"Copyright © 2022 Intel Corporation")
 	}
 
-	return fmt.Sprintf("[%s, Version: %s Pid: %s %s]",
+	return fmt.Sprintf("%s, Version: %s Pid: %s %s",
 		cz.Yellow("Go-Pktgen Traffic Generator"), cz.Green(Version()),
 		cz.Red(os.Getpid()),
 		cz.SkyBlue("Copyright © 2022 Intel Corporation"))
@@ -80,4 +81,78 @@ func FormatUnits(v uint64, w ...interface{}) string {
 // BitRate - return the network bit rate
 func BitRate(ioPkts, ioBytes uint64) float64 {
 	return float64(((ioPkts * PktOverheadSize) + ioBytes) * 8)
+}
+
+func acceptNumber(textToCheck string, lastChar rune) bool {
+
+	return lastChar >= '0' && lastChar <= '9'
+}
+
+func acceptIPv4(textToCheck string, lastChar rune) bool {
+
+	return acceptNumber(textToCheck, lastChar) || lastChar == '.'
+}
+
+func acceptIPv4CiDR(textToCheck string, lastChar rune) bool {
+
+	return acceptNumber(textToCheck, lastChar) || lastChar == '.' || lastChar == '/'
+}
+
+func acceptFloat(textToCheck string, lastChar rune) bool {
+
+	return acceptNumber(textToCheck, lastChar) || lastChar == '.'
+}
+
+func acceptHex(textToCheck string, lastChar rune) bool {
+
+	return acceptNumber(textToCheck, lastChar) ||
+		(lastChar >= 'a' && lastChar <= 'f') ||
+		(lastChar >= 'A' && lastChar <= 'F')
+}
+
+func acceptMac(textToCheck string, lastChar rune) bool {
+
+	return acceptHex(textToCheck, lastChar) || lastChar == ':'
+}
+
+func parseNumberUint64(text string, val *uint64) error {
+
+	if len(text) == 0 {
+		return nil
+	}
+	if v, err := strconv.ParseUint(text, 10, 64); err != nil {
+		tlog.DoPrintf("Failed to parse uint64: %s\n", err)
+        return err
+    } else {
+		*val = v
+		return nil
+	}
+}
+
+func parseNumberFloat64(text string, val *float64) error {
+
+	if len(text) == 0 {
+		return nil
+	}
+	if v, err := strconv.ParseFloat(text, 64); err != nil {
+		tlog.DoPrintf("Failed to parse float64: %s\n", err)
+        return err
+    } else {
+		*val = v
+		return nil
+	}
+}
+
+func parseNumberUint16(text string, val *uint16) error {
+
+	if len(text) == 0 {
+		return nil
+	}
+	if v, err := strconv.ParseUint(text, 10, 16); err != nil {
+		tlog.DoPrintf("Failed to parse uint16: %s\n", err)
+        return err
+    } else {
+		*val = uint16(v)
+		return nil
+	}
 }
